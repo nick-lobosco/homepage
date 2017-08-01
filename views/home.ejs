@@ -1,0 +1,59 @@
+<iframe style="float: right; margin: 20px;" src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
+
+<h2>Traffic<span id='trafficToggle'>></span>  </h2>
+<div style="margin-left: 20px" id='trafficdiv' hidden>
+    <% if(incidents.length > 0){ %>
+        <% incidents.forEach(function(incident){ %>
+            <p> <%= incident.description %> </p>
+            <p style="margin-left: 20px"> road closed: <%= incident.roadClosed %> </p>
+            <p style="margin-left: 20px">should be cleared up by: <%= new Date(parseInt(incident.end.substr(6,incident.end.length-8))).toLocaleString() %></p>
+        <% }) %>
+    <% }else{ %>
+        <p>No traffic incidents to report</p>
+    <% } %>
+</div>
+    
+<h2>Current Weather<span id='weatherToggle'>></span></h2>
+<div style="margin-left: 20px" id='weatherdiv' hidden>
+    <p><%= weather['weather'][0]['description']%><img src='http://openweathermap.org/img/w/<%= weather['weather'][0]['icon']%>.png'></img></p>
+    <p>temp: <%= weather['main']['temp'] %> </p>
+    <p>humidity: <%= weather['main']['humidity'] %>%</p>
+    <p>wind speed: <%= weather['wind']['speed'] %> mph</p>
+    <p>Sunset: <%= new Date(weather['sys']['sunset']).toLocaleTimeString() %></p>
+</div>
+
+
+<h2>5 Day Forecast<span id='forecastToggle'>></span></h2>
+<div style="margin-left: 20px" id='forecastdiv' hidden>
+    <% var max, count = 0; %>
+    <% for(var i=0;i<5;i++){ %>
+        <div style="width:20%; float: left;">
+            <h3><%=new Date(forecast[count]['dt_txt']).toDateString()%></h3>
+            <% max = (i == 0 ? forecast.length-32 : count+8); %>
+            <% while(count<max){ %>
+                <p> <%=new Date(forecast[count]['dt_txt']).toLocaleTimeString()%>: </p>
+                <div style="margin-left: 20px; background-image: url('http://openweathermap.org/img/w/<%= forecast[count]['weather'][0]['icon']%>.png'); background-size: 50% 100%; background-repeat: no-repeat;">
+                    <p> <%= forecast[count]['weather'][0]['description']%></p>
+                    <p> temp: <%=forecast[count]['main']['temp']%></p>
+                    <p> humidity: <%=forecast[count]['main']['humidity']%>%</p>
+                </div>
+                <% count++; %>
+        <% } %>
+        </div>
+    <% } %>
+</div>
+    
+
+
+<script>
+    ['traffic', 'weather', 'forecast', 'todo'].forEach(function(name){
+        document.querySelector('#'+name+'Toggle').addEventListener('click', function(){
+            var el = document.querySelector('#'+name+'div');
+            if(el.hasAttribute('hidden'))
+                el.removeAttribute('hidden');
+            else
+                el.setAttribute('hidden',true);
+        });
+    });
+</script>
+
