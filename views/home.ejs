@@ -1,24 +1,25 @@
+<link rel="stylesheet" type="text/css" href="/main.css">
 <form action="/zip" method="post">
     <input type="text" name="zip" placeholder="zip code">
     <% if(!correctZip){ %>
-        <h3 style="color: red">Invalid Zip</h3>
+        <h3 class='error_message'>Invalid Zip</h3>
     <% } %>
 </form>
 
-<iframe style="float: right; margin: 20px;" src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
+<iframe id='spotify' src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
 
 <% if(locality){ %>
     <h2>Displaying data for <%= locality %></h2>    
 <% } %>
 
 <% if(incidents){ %>
-    <h2>Traffic<span id='trafficToggle'>></span>  </h2>
-    <div style="margin-left: 20px" id='trafficdiv'>
+    <h2 class='toggle'>Traffic></h2>
+    <div class='info'>
         <% if(incidents.length > 0){ %>
             <% incidents.forEach(function(incident){ %>
                 <p> <%= incident.description %> </p>
-                <p style="margin-left: 20px"> road closed: <%= incident.roadClosed %> </p>
-                <p style="margin-left: 20px">should be cleared up by: <%= new Date(parseInt(incident.end.substr(6,incident.end.length-8))).toLocaleString() %></p>
+                <p class='incident'> road closed: <%= incident.roadClosed %> </p>
+                <p class='incident'>should be cleared up by: <%= new Date(parseInt(incident.end.substr(6,incident.end.length-8))).toLocaleString() %></p>
             <% }) %>
         <% }else{ %>
             <p>No traffic incidents to report</p>
@@ -27,8 +28,8 @@
 <% } %>
     
 <% if(weather){ %>
-    <h2>Current Weather<span id='weatherToggle'>></span></h2>
-    <div style="margin-left: 20px" id='weatherdiv'>
+    <h2 class='toggle'>Current Weather></h2>
+    <div class='info'>
         <p><%= weather['weather'][0]['description']%><img src='http://openweathermap.org/img/w/<%= weather['weather'][0]['icon']%>.png'></img></p>
         <p>temp: <%= weather['main']['temp'] %> </p>
         <p>humidity: <%= weather['main']['humidity'] %>%</p>
@@ -38,11 +39,11 @@
 <% } %>
 
 <% if(forecast){ %>
-    <h2>5 Day Forecast<span id='forecastToggle'>></span></h2>
-    <div style="margin-left: 20px" id='forecastdiv'>
+    <h2 class='toggle'>5 Day Forecast></h2>
+    <div class='info'>
         <% var max, count = 0; %>
         <% for(var i=0;i<5;i++){ %>
-            <div style="width:20%; float: left;">
+            <div class='forecastDate'>
                 <h3><%=new Date(forecast[count]['dt_txt']).toDateString()%></h3>
                 <% max = (i == 0 ? forecast.length-32 : count+8); %>
                 <% while(count<max){ %>
@@ -59,16 +60,4 @@
     </div>
 <% } %>
     
-
-
-<!-- <script>
-    ['traffic', 'weather', 'forecast', 'todo'].forEach(function(name){
-        document.querySelector('#'+name+'Toggle').addEventListener('click', function(){
-            var el = document.querySelector('#'+name+'div');
-            if(el.hasAttribute('hidden'))
-                el.removeAttribute('hidden');
-            else
-                el.setAttribute('hidden',true);
-        });
-    });
-</script> -->
+<script type="text/javascript" src='/toggle.js'></script> 
