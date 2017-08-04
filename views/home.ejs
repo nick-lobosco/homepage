@@ -1,10 +1,22 @@
 <link rel="stylesheet" type="text/css" href="/main.css">
+<span>
+    <% if(username){ %>
+        <a href="/settings" class='btn'><%=username%></a>
+        <a href="/logout" class="btn">logout</a>
+    <% }else{ %>
+        <a href="/login" class='btn'>LOGIN</a>
+        <a href="/signup" class='btn'>SIGNUP</a>
+    <% } %>
+</span>    
 <form action="/zip" method="post">
     <input type="text" name="zip" placeholder="zip code">
     <% if(!correctZip){ %>
         <h3 class='error_message'>Invalid Zip</h3>
     <% } %>
 </form>
+<% if(username){ %>
+    <a href='/useDefaultZip'>use default zipcode</a>
+<% } %>
 
 <iframe id='spotify' src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
 

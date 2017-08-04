@@ -1,0 +1,8 @@
+<link rel="stylesheet" type="text/css" href="/main.css">
+<form action="/login" method="post" class='login'>
+    <h1>Login</h1>
+    <p class='error_message'><%= loginSuccess ? "" : "Incorrect Username or Password" %></p>
+    <input class='loginElem' type="text" placeholder="Username" name="username">
+    <input class='loginElem' type="password" placeholder="Password" name="password">
+    <input class='loginElem' type="submit">
+</form>

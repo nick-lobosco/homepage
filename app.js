@@ -1,17 +1,46 @@
-var express     = require('express'),
-    request     = require('request'),
-    bodyParser  = require('body-parser'),
-    async		 = require('async');			
+var express     			= require('express'),
+    request     			= require('request'),
+    bodyParser  			= require('body-parser'),
+    async					= require('async'),
+    mongoose				= require('mongoose'),
+    passport				= require('passport'),
+    localStrategy 			= require('passport-local'),
+    passportLocalMongoose 	= require('passport-local-mongoose'),
+    expressSession			= require('express-session'),
+    User					= require('./models/user');			
 
+//=======================================================
+//SET UP APP
+//=======================================================
 var app = express();
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(__dirname + '/public')); //changes default directory
+app.use(expressSession({secret: 'This is a secret sentence', resave: false, saveUninitialized: false})); //creates logged in session
+app.use(passport.initialize()); 
+app.use(passport.session());
+
+//=======================================================
+//SET UP AUTHENTICATION
+//=======================================================
+passport.use(new localStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+//CONNECT TO DATABASE
+mongoose.connect('mongodb://nick:password@ds127993.mlab.com:27993/homepage-');
 
 //====================================
 //Global Variables
 //====================================
-var 	zip, coords, locality, correctZip = true;
+var 	zip,
+		coords,
+		locality,
+		username,
+		defaultZip,
+		correctZip = true,
+		loginSuccess = true,
+		signupSuccess = true;
 
 //====================================
 //Get Routes
@@ -49,10 +78,43 @@ app.get('/', function(req, res){
 				callback(null, incidents, weather, null);
 		}
 	], function(err, incidents, weather, forecast){
-		res.render('home', {incidents: incidents, weather: weather, forecast: forecast, locality: locality, correctZip: correctZip});
+		res.render('home', {username: username, incidents: incidents, weather: weather, forecast: forecast, locality: locality, correctZip: correctZip});
 	});
 });
 
+//SIGNUP PAGE- if user is logged in redirects to account page
+app.get('/signup', function(req, res){
+    req.isAuthenticated() ? res.redirect('/') : res.render('signup', {signupSuccess: signupSuccess});
+});
+
+//TESTS WHETHER LOGIN CREDENTIALS WERE CORRECT - redirects to accounts if login was successful
+app.get('/login/:bool', function(req,res){
+   loginSuccess = (req.params.bool == 'true');
+   loginSuccess ? res.redirect('/') : res.redirect('/login');
+});
+
+//LOGIN PAGE- if user is already logged in redirects to account page
+app.get('/login', function(req, res){
+    req.isAuthenticated() ? res.redirect('/') : res.render('login', {loginSuccess: loginSuccess});
+});
+
+//LOGS USER OUT AND REDIRECTS TO HOME
+app.get('/logout', function(req, res){
+	username = null;
+	defaultZip = null;
+    req.logout();
+    res.redirect('/');
+});
+
+app.get('/useDefaultZip', function(req, res){
+	zip = defaultZip;
+	correctZip = true;
+	getCoords(zip, res);
+});
+
+app.get('/settings', function(req, res){
+	res.render('settings');
+})
 //==================================
 //Post Routes
 //==================================
@@ -60,17 +122,7 @@ app.post('/zip', function(req, res){
 	if(Number.isInteger(Number(req.body.zip)) && String(req.body.zip).length == 5){ //correctly formatted zip code
 		zip = req.body.zip;
 		correctZip = true;
-		request('http://dev.virtualearth.net/REST/v1/Locations/zip='+req.body.zip+'?&key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
-		     var tempCoords = JSON.parse(body)['resourceSets'][0]['resources'][0]['bbox'];
-		     locality = JSON.parse(body)['resourceSets'][0]['resources'][0]['address']['locality'];
-		     coords = "";
-			async.eachOf(tempCoords, function(coord, key, callback){
-				coords += (String(coord) + (key < 3 ? ',' : '?'));
-				callback();
-			}, function(err){
-				res.redirect('/');
-			})
-		});
+		getCoords(zip, res);
 	}
 	else{
 		correctZip = false;
@@ -78,6 +130,66 @@ app.post('/zip', function(req, res){
 	}
 });
 
+//CREATES NEW ACCOUNT
+app.post('/signup', function(req, res){
+    User.register(new User({username: req.body.username}), req.body.password, function(err, user){
+        if(!err){
+            signupSuccess = true;
+            passport.authenticate('local')(req,res, function(){
+                username = req.body.username;
+                res.redirect('/');
+            });
+        }
+        else{
+            signupSuccess = false;
+            res.redirect('signup');
+        }
+    });
+});
+
+//LOGS USER IN
+app.post('/login', passport.authenticate('local', {
+    failureRedirect: '/login/false'
+}), function(req, res){
+	username = req.body.username;
+	User.findOne({username: username}, function(err, user){
+		defaultZip = user.zipcode;
+		res.redirect('/');
+	});
+});
+
+app.post('/settings', function(req, res){
+	User.findOne({username: username}, function(err, user){
+		if(Number.isInteger(Number(req.body.zip)) && req.body.zip.length == 5){ //correctly formatted zip code
+			user.zipcode = req.body.zip;
+			user.save(function(err){
+				defaultZip = user.zipcode;
+				res.redirect('/');		
+			})
+		}
+	});
+});
+
+//=======================================================
+//functions
+//=======================================================
+function getCoords(zip, res){
+	request('http://dev.virtualearth.net/REST/v1/Locations/zip='+zip+'?&key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
+	    var tempCoords = JSON.parse(body)['resourceSets'][0]['resources'][0]['bbox'];
+	    locality = JSON.parse(body)['resourceSets'][0]['resources'][0]['address']['locality'];
+	    coords = "";
+		async.eachOf(tempCoords, function(coord, key, callback){
+			coords += (String(coord) + (key < 3 ? ',' : '?'));
+			callback();
+		}, function(err){
+			res.redirect('/');
+		})
+	});
+}
+
+//=======================================================
+//START SERVER
+//=======================================================
 app.listen(9000, function(){
     console.log('success');
 });

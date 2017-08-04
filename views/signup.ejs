@@ -1,0 +1,9 @@
+<link rel="stylesheet" type="text/css" href="/main.css">
+<h1>Sign Up Form</h1>
+
+<h3 class='error_message'><%= signupSuccess ? "" : "User Name Already Taken" %></h3>
+<form action='/signup' method='post'>
+    <input type='text' name='username' placeholder='username'>
+    <input type='password' name='password' placeholder='password'>
+    <button>Submit</button>
+</form>
