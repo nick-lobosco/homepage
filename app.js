@@ -7,7 +7,11 @@ var express     			= require('express'),
     localStrategy 			= require('passport-local'),
     passportLocalMongoose 	= require('passport-local-mongoose'),
     expressSession			= require('express-session'),
-    User					= require('./models/user');			
+    User					= require('./models/user');	
+//==========================
+//SAMPLE CHANGE
+//==========================
+	
 
 //=======================================================
 //SET UP APP
