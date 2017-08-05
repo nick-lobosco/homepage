@@ -65,7 +65,23 @@
     <% } %>
 </div>  
 <div class='col-md-6'>
-    <h3>To-Dos:</h3>
-    
+    <% if(todos){ %>
+        <h2 class='toggle'>To-Dos></h3>
+        <div class='info'>
+            <ul>
+                <% todos.forEach(function(todo){ %>
+                    <li class='todo'><%= todo %><i class="fa fa-times" aria-hidden="true"></i></li>
+                    <form action='/removeTodo' method='post'>
+                        <input type="text" name="todo" value=<%=todo%> hidden> 
+                    </form>
+                <% }); %>    
+            </ul>
+            <form action='/newTodo' method='post'>
+                <input type="text" name="todo" placeholder="new todo">
+            </form>
+        </div>
+    <% } %>
 </div>
+
 <script type="text/javascript" src='/toggle.js'></script> 
+
