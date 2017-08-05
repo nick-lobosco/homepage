@@ -111,6 +111,7 @@ app.get('/logout', function(req, res){
 	zip = null;
 	coords = null;
 	locality = null;
+	currentUser = null;
     req.logout();
     res.redirect('/');
 });
@@ -192,7 +193,9 @@ app.post('/newTodo', function(req, res){
 
 app.post('/removeTodo', function(req, res){
 	currentUser.todos.splice(currentUser.todos.indexOf(req.body.todo), 1);
-	res.redirect('/');
+	currentUser.save(function(err){
+		res.redirect('/');
+	});
 });
 
 //=======================================================
