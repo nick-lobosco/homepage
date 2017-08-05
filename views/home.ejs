@@ -1,75 +1,71 @@
-<link rel="stylesheet" type="text/css" href="/main.css">
-<span>
+<% include partials/header %>
+<div class="col-md-6">
+    <iframe id='spotify' src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
+    <form action="/zip" method="post">
+        <input type="text" name="zip" placeholder="zip code">
+        <% if(!correctZip){ %>
+            <h3 class='error_message'>Invalid Zip</h3>
+        <% } %>
+    </form>
     <% if(username){ %>
-        <a href="/settings" class='btn'><%=username%></a>
-        <a href="/logout" class="btn">logout</a>
-    <% }else{ %>
-        <a href="/login" class='btn'>LOGIN</a>
-        <a href="/signup" class='btn'>SIGNUP</a>
+        <a href='/useDefaultZip'>use default zipcode</a>
     <% } %>
-</span>    
-<form action="/zip" method="post">
-    <input type="text" name="zip" placeholder="zip code">
-    <% if(!correctZip){ %>
-        <h3 class='error_message'>Invalid Zip</h3>
+
+
+    <% if(locality){ %>
+        <h2>Displaying data for <%= locality %></h2>    
     <% } %>
-</form>
-<% if(username){ %>
-    <a href='/useDefaultZip'>use default zipcode</a>
-<% } %>
 
-<iframe id='spotify' src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
-
-<% if(locality){ %>
-    <h2>Displaying data for <%= locality %></h2>    
-<% } %>
-
-<% if(incidents){ %>
-    <h2 class='toggle'>Traffic></h2>
-    <div class='info'>
-        <% if(incidents.length > 0){ %>
-            <% incidents.forEach(function(incident){ %>
-                <p> <%= incident.description %> </p>
-                <p class='incident'> road closed: <%= incident.roadClosed %> </p>
-                <p class='incident'>should be cleared up by: <%= new Date(parseInt(incident.end.substr(6,incident.end.length-8))).toLocaleString() %></p>
-            <% }) %>
-        <% }else{ %>
-            <p>No traffic incidents to report</p>
-        <% } %>
-    </div>
-<% } %>
-    
-<% if(weather){ %>
-    <h2 class='toggle'>Current Weather></h2>
-    <div class='info'>
-        <p><%= weather['weather'][0]['description']%><img src='http://openweathermap.org/img/w/<%= weather['weather'][0]['icon']%>.png'></img></p>
-        <p>temp: <%= weather['main']['temp'] %> </p>
-        <p>humidity: <%= weather['main']['humidity'] %>%</p>
-        <p>wind speed: <%= weather['wind']['speed'] %> mph</p>
-        <p>Sunset: <%= new Date(weather['sys']['sunset']).toLocaleTimeString() %></p>
-    </div>
-<% } %>
-
-<% if(forecast){ %>
-    <h2 class='toggle'>5 Day Forecast></h2>
-    <div class='info'>
-        <% var max, count = 0; %>
-        <% for(var i=0;i<5;i++){ %>
-            <div class='forecastDate'>
-                <h3><%=new Date(forecast[count]['dt_txt']).toDateString()%></h3>
-                <% max = (i == 0 ? forecast.length-32 : count+8); %>
-                <% while(count<max){ %>
-                    <p> <%=new Date(forecast[count]['dt_txt']).toLocaleTimeString()%>: </p>
-                    <div style="margin-left: 20px; background-image: url('http://openweathermap.org/img/w/<%= forecast[count]['weather'][0]['icon']%>.png'); background-size: 50% 100%; background-repeat: no-repeat;">
-                        <p> <%= forecast[count]['weather'][0]['description']%></p>
-                        <p> temp: <%=forecast[count]['main']['temp']%></p>
-                        <p> humidity: <%=forecast[count]['main']['humidity']%>%</p>
-                    </div>
-                    <% count++; %>
+    <% if(incidents){ %>
+        <h2 class='toggle'>Traffic></h2>
+        <div class='info'>
+            <% if(incidents.length > 0){ %>
+                <% incidents.forEach(function(incident){ %>
+                    <p> <%= incident.description %> </p>
+                    <p class='incident'> road closed: <%= incident.roadClosed %> </p>
+                    <p class='incident'>should be cleared up by: <%= new Date(parseInt(incident.end.substr(6,incident.end.length-8))).toLocaleString() %></p>
+                <% }) %>
+            <% }else{ %>
+                <p>No traffic incidents to report</p>
             <% } %>
-            </div>
-        <% } %>
-    </div>
-<% } %>
+        </div>
+    <% } %>
+        
+    <% if(weather){ %>
+        <h2 class='toggle'>Current Weather></h2>
+        <div class='info'>
+            <p><%= weather['weather'][0]['description']%><img src='http://openweathermap.org/img/w/<%= weather['weather'][0]['icon']%>.png'></img></p>
+            <p>temp: <%= weather['main']['temp'] %> </p>
+            <p>humidity: <%= weather['main']['humidity'] %>%</p>
+            <p>wind speed: <%= weather['wind']['speed'] %> mph</p>
+            <p>Sunset: <%= new Date(weather['sys']['sunset']).toLocaleTimeString() %></p>
+        </div>
+    <% } %>
+
+    <% if(forecast){ %>
+        <h2 class='toggle'>5 Day Forecast></h2>
+        <div class='info'>
+            <% var max, count = 0; %>
+            <% for(var i=0;i<5;i++){ %>
+                <div class='forecastDate'>
+                    <h3><%=new Date(forecast[count]['dt_txt']).toDateString()%></h3>
+                    <% max = (i == 0 ? forecast.length-32 : count+8); %>
+                    <% while(count<max){ %>
+                        <p> <%=new Date(forecast[count]['dt_txt']).toLocaleTimeString()%>: </p>
+                        <div style="margin-left: 20px; background-image: url('http://openweathermap.org/img/w/<%= forecast[count]['weather'][0]['icon']%>.png'); background-size: 50% 100%; background-repeat: no-repeat;">
+                            <p> <%= forecast[count]['weather'][0]['description']%></p>
+                            <p> temp: <%=forecast[count]['main']['temp']%></p>
+                            <p> humidity: <%=forecast[count]['main']['humidity']%>%</p>
+                        </div>
+                        <% count++; %>
+                <% } %>
+                </div>
+            <% } %>
+        </div>
+    <% } %>
+</div>  
+<div class='col-md-6'>
+    <h3>To-Dos:</h3>
     
+</div>
 <script type="text/javascript" src='/toggle.js'></script> 

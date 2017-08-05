@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Homepage</title>
+	<link rel="stylesheet" type="text/css" href="/main.css">
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://use.fontawesome.com/92709410f6.js"></script>
+</head>
+<body>
+	<nav class="header navbar">
+	    <a class="navbar-brand" href="/">Homepage</a>
+	    <span>
+	        <% if(username){ %>
+	            <a href="/settings" class='btn btn-primary'><i class="fa fa-user-o" aria-hidden="true"></i> <%=username%></a>
+	            <a href="/logout" class="btn btn-primary">logout</a>
+	        <% }else{ %>
+	            <a href="/login" class='btn btn-primary'>LOGIN</a>
+	            <a href="/signup" class='btn btn-primary'>SIGNUP</a>
+	        <% } %>
+	    </span>    
+	</nav>

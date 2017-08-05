@@ -40,7 +40,8 @@ var 	zip,
 		defaultZip,
 		correctZip = true,
 		loginSuccess = true,
-		signupSuccess = true;
+		signupSuccess = true,
+		correctDefaultZip = true;
 
 //====================================
 //Get Routes
@@ -113,7 +114,7 @@ app.get('/useDefaultZip', function(req, res){
 });
 
 app.get('/settings', function(req, res){
-	res.render('settings');
+	res.render('settings', {username: username, defaultZip: defaultZip, correctDefaultZip: correctDefaultZip});
 })
 //==================================
 //Post Routes
@@ -162,10 +163,15 @@ app.post('/settings', function(req, res){
 	User.findOne({username: username}, function(err, user){
 		if(Number.isInteger(Number(req.body.zip)) && req.body.zip.length == 5){ //correctly formatted zip code
 			user.zipcode = req.body.zip;
+			correctDefaultZip = true;
 			user.save(function(err){
 				defaultZip = user.zipcode;
-				res.redirect('/');		
-			})
+				res.redirect('/settings');		
+			});
+		}
+		else{
+			correctDefaultZip = false;
+			res.redirect('/settings');
 		}
 	});
 });

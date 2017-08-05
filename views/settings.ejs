@@ -1,3 +1,20 @@
-<form action="/settings" method='post'>
+<% include partials/header %>
+<h1>Settings:</h1>
+<% if(defaultZip){ %>
+	<h3>Default Zipcode: <%= defaultZip %> <i class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+<% }else{ %>
+	<h3>No Default Zipcode <i class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+<% } %>
+<form id='zipEditForm' action="/settings" method='post' style="display: <%= correctDefaultZip ? 'none' : 'block' %>">
+	<% if(!correctDefaultZip){ %>
+		<p class='error_message'>incorrect zip code</p>
+	<% } %>
 	<input type="text" name="zip" placeholder="zipcode">
 </form>
+
+<script>
+	document.querySelector('.fa-pencil-square-o').addEventListener('click', function(){
+		var form = document.getElementById('zipEditForm');
+		form.style.display = (form.style.display == 'block' ? 'none' : 'block');
+	});
+</script>

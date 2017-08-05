@@ -1,10 +1,6 @@
 .error_message{
 	color: red;
 }
-#spotify{
-	float: right;
-	margin: 20px;
-}
 .info{
 	margin-left: 20px;
 	display: none;
@@ -16,7 +12,13 @@
 	width:20%;
 	float: left;
 }
+#spotify{
+	height: 75px;
+}
 .btn{
 	float: right;
 	margin: 10px;
+}
+.header{
+	background-color: #c5d0e2;
 }
