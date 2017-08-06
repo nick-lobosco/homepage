@@ -39,8 +39,9 @@ mongoose.connect('mongodb://nick:password@ds127993.mlab.com:27993/homepage-');
 //====================================
 var zip,
 	coords,
-	locality,
+	address,
 	currentUser;
+var defs = ['traffic', 'weather', 'forecast', 'spotify', 'todos'];
 
 //====================================
 //Error Control Variables
@@ -86,13 +87,13 @@ app.get('/', function(req, res){
 				callback(null, incidents, weather, null);
 		}
 	], function(err, incidents, weather, forecast){
-		res.render('home', {username: (currentUser? currentUser.username : null), incidents: incidents, weather: weather, forecast: forecast, locality: locality, correctZip: correctZip, todos: (currentUser? currentUser.todos : null)});
+		res.render('home', {defaults: (currentUser? Object.keys(currentUser.defaults): defs), currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, correctZip: correctZip});
 	});
 });
 
 //SIGNUP PAGE- if user is logged in redirects to account page
 app.get('/signup', function(req, res){
-    req.isAuthenticated() ? res.redirect('/') : res.render('signup', {signupSuccess: signupSuccess});
+    req.isAuthenticated() ? res.redirect('/') : res.render('signup', {currentUser: currentUser, signupSuccess: signupSuccess});
 });
 
 //TESTS WHETHER LOGIN CREDENTIALS WERE CORRECT - redirects to accounts if login was successful
@@ -103,14 +104,14 @@ app.get('/login/:bool', function(req,res){
 
 //LOGIN PAGE- if user is already logged in redirects to account page
 app.get('/login', function(req, res){
-    req.isAuthenticated() ? res.redirect('/') : res.render('login', {loginSuccess: loginSuccess, username: (currentUser? currentUser.username : null)});
+    req.isAuthenticated() ? res.redirect('/') : res.render('login', {loginSuccess: loginSuccess, currentUser: currentUser});
 });
 
 //LOGS USER OUT AND REDIRECTS TO HOME
 app.get('/logout', function(req, res){
 	zip = null;
 	coords = null;
-	locality = null;
+	address = null;
 	currentUser = null;
     req.logout();
     res.redirect('/');
@@ -124,7 +125,7 @@ app.get('/useDefaultZip', function(req, res){
 
 app.get('/settings', function(req, res){
 	if(req.isAuthenticated())
-		res.render('settings', {username: currentUser.username, defaultZip: currentUser.zipcode, correctDefaultZip: correctDefaultZip});
+		res.render('settings', {currentUser: currentUser, correctDefaultZip: correctDefaultZip});
 	else
 		res.redirect('/');
 })
@@ -145,7 +146,7 @@ app.post('/zip', function(req, res){
 
 //CREATES NEW ACCOUNT
 app.post('/signup', function(req, res){
-    User.register(new User({username: req.body.username}), req.body.password, function(err, user){
+    User.register(new User({username: req.body.username, defaults: {traffic: 'on', weather: 'on', forecast: 'on', spotify: 'on', todos: 'on'}}), req.body.password, function(err, user){
         if(!err){
             signupSuccess = true;
             passport.authenticate('local')(req,res, function(){
@@ -198,13 +199,22 @@ app.post('/removeTodo', function(req, res){
 	});
 });
 
+app.post('/defaults', function(req, res){
+	currentUser.defaults = req.body;
+	currentUser.save(function(err){
+		res.redirect('/');
+	});
+});
+
 //=======================================================
 //functions
 //=======================================================
 function getCoords(zip, res){
 	request('http://dev.virtualearth.net/REST/v1/Locations/zip='+zip+'?&key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
 	    var tempCoords = JSON.parse(body)['resourceSets'][0]['resources'][0]['bbox'];
-	    locality = JSON.parse(body)['resourceSets'][0]['resources'][0]['address']['locality'];
+	    address = JSON.parse(body)['resourceSets'][0]['resources'][0]['address'];
+	    // locality = JSON.parse(body)['resourceSets'][0]['resources'][0]['address']['locality'];
+	    // console.log(JSON.parse(body)['resourceSets'][0]['resources'][0]);
 	    coords = "";
 		async.eachOf(tempCoords, function(coord, key, callback){
 			coords += (String(coord) + (key < 3 ? ',' : '?'));

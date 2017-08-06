@@ -22,3 +22,13 @@
 .header{
 	background-color: #c5d0e2;
 }
+#locality{
+	color: #006dcc;
+}
+#address{
+	margin-left: 50%;
+}
+.toggle{
+	color: #006dcc;
+	display: inline-block;
+}
