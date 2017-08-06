@@ -1,9 +1,9 @@
 <% include partials/header %>
-<h1>Sign Up Form</h1>
 
-<h3 class='error_message'><%= signupSuccess ? "" : "User Name Already Taken" %></h3>
-<form action='/signup' method='post'>
-    <input type='text' name='username' placeholder='username'>
-    <input type='password' name='password' placeholder='password'>
-    <button>Submit</button>
+<form action='/signup' method='post' class='login'>
+	<h1>Sign Up</h1>
+	<h3 class='error_message'><%= signupSuccess ? "" : "User Name Already Taken" %></h3>
+    <input type='text' name='username' placeholder='username' class='loginElem'>
+    <input type='password' name='password' placeholder='password' class='loginElem'>
+    <button class='loginElem'>Submit</button>
 </form>

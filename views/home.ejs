@@ -1,27 +1,27 @@
 <% include partials/header %>
+<% include partials/navbar %>
 <div class="col-md-6">
     <% if(defaults.includes('spotify')){ %>
         <iframe id='spotify' src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
     <% } %>
-    <form action="/zip" method="post">
-        <label>Enter Zipcode:</label>
+
+    <% if(address){ %>
+        <h2>Displaying data for: <span id='locality'><%= address['locality']%>, <%= address['adminDistrict'] %></span></h2>
+    <% } %>
+
+     <form action="/zip" method="post">
+        <label>Change Current Zipcode:</label>
         <input type="text" name="zip">
         <% if(!correctZip){ %>
             <h3 class='error_message'>Invalid Zip</h3>
         <% } %>
     </form>
-    <% if(currentUser){ %>
-        <%if(currentUser.zipcode){ %>
-            <a href='/useDefaultZip'>use default zipcode: <%= currentUser.zipcode %></a>
-        <% } %>
+
+    <%if(currentUser.zipcode){ %>
+        <a href='/useDefaultZip'>Use Default Zipcode: <%= currentUser.zipcode %></a>
     <% } %>
 
-
-    <% if(address){ %>
-        <h2>Displaying data for: <span id='locality'><%= address['locality'] %></span></h2>
-            <p id='address' hidden><%= address['locality']%>, <%= address['formattedAddress'] %></p>
-    <% } %>
-    <% if(incidents && defaults.includes('traffic')){ %>
+    <% if(defaults.includes('traffic') && incidents){ %>
         <div>
             <h2 class='toggle'>Show Traffic:</h2>
             <div class='info'>
@@ -38,7 +38,7 @@
         </div>
     <% } %>
         
-    <% if(weather && defaults.includes('weather')){ %>
+    <% if(defaults.includes('weather') && weather){ %>
         <div>
             <h2 class='toggle'>Show Current Weather:</h2>
             <div class='info'>
@@ -51,7 +51,7 @@
         </div>
     <% } %>
 
-    <% if(forecast && defaults.includes('forecast')){ %>
+    <% if(defaults.includes('forecast') && forecast){ %>
         <div>
             <h2 class='toggle'>Show 5 Day Forecast:</h2>
             <div class='info'>
@@ -74,10 +74,11 @@
             </div>
         </div>
     <% } %>
-</div>  
+</div> 
+
 <div class='col-md-6'>
-    <% if(currentUser && defaults.includes('todos')){ %>
-        <h2 class='toggle'>To-Dos></h3>
+    <% if(defaults.includes('todos')){ %>
+        <h2 class='toggle'>To-Dos:</h3>
         <div class='info' style="display: block">
             <ul>
                 <% currentUser.todos.forEach(function(todo){ %>
@@ -95,13 +96,3 @@
 </div>
 
 <script type="text/javascript" src='/toggle.js'></script> 
-<script>
-    var address = document.getElementById('address');
-    var locality = document.getElementById('locality');
-    locality.addEventListener('mouseover', function(){
-        address.removeAttribute('hidden');
-    });
-    locality.addEventListener('mouseleave', function(){
-        address.setAttribute('hidden', true);
-    });
-</script>

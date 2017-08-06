@@ -3,8 +3,6 @@ for(var i = 0; i < toggles.length; i++){
     console.log(toggles[i]);
     toggles[i].addEventListener('click', function(){
         this.classList.toggle('clicked');
-        // var el = this.nextElementSibling;
-        // el.style.display = (el.style.display == 'block' ? 'none' : 'block');
     });
     toggles[i].addEventListener('mouseover', function(){
         var el = this.nextElementSibling;

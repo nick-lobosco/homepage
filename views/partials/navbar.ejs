@@ -1,0 +1,12 @@
+<nav class="header navbar">
+	    <a class="navbar-brand" href="/">Homepage</a>
+	    <span>
+	        <% if(currentUser){ %>
+	            <a href="/settings" class='btn btn-primary'><i class="fa fa-user-o" aria-hidden="true"></i> <%=currentUser.username%></a>
+	            <a href="/logout" class="btn btn-primary">logout</a>
+	        <% }else{ %>
+	            <a href="/login" class='btn btn-primary'>LOGIN</a>
+	            <a href="/signup" class='btn btn-primary'>SIGNUP</a>
+	        <% } %>
+	    </span> 
+	</nav>

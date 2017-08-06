@@ -8,10 +8,6 @@ var express     			= require('express'),
     passportLocalMongoose 	= require('passport-local-mongoose'),
     expressSession			= require('express-session'),
     User					= require('./models/user');	
-//==========================
-//SAMPLE CHANGE
-//==========================
-	
 
 //=======================================================
 //SET UP APP
@@ -41,7 +37,6 @@ var zip,
 	coords,
 	address,
 	currentUser;
-var defs = ['traffic', 'weather', 'forecast', 'spotify', 'todos'];
 
 //====================================
 //Error Control Variables
@@ -52,62 +47,95 @@ var	correctZip = true,
 	correctDefaultZip = true;
 
 //====================================
-//Get Routes
+//Home Page
 //====================================
 app.get('/', function(req, res){
-	async.waterfall([
-		function(callback){
-			if(coords){
-				request('http://dev.virtualearth.net/REST/v1/Traffic/Incidents/'+coords+'key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
-					var incidents = JSON.parse(body)['resourceSets'][0]['resources'];
-					callback(null, incidents);
-				});
+	if(req.isAuthenticated()){ // get info and load home page
+		async.waterfall([
+			function(callback){
+				if(coords){
+					request('http://dev.virtualearth.net/REST/v1/Traffic/Incidents/'+coords+'key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
+						var incidents = JSON.parse(body)['resourceSets'][0]['resources'];
+						callback(null, incidents);
+					});
+				}
+				else
+					callback(null, null);
+			},
+			function(incidents, callback){
+				if(zip){
+					request('http://api.openweathermap.org/data/2.5/weather?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body){
+						var weather = JSON.parse(body);
+						callback(null, incidents, weather);
+					});
+				}
+				else
+					callback(null, incidents, null);
+			},
+			function(incidents, weather, callback){
+				if(zip){
+					request('http://api.openweathermap.org/data/2.5/forecast?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
+						var forecast = JSON.parse(body)['list'];
+						callback(null, incidents, weather, forecast);
+					});
+				}
+				else
+					callback(null, incidents, weather, null);
 			}
-			else
-				callback(null, null);
-		},
-		function(incidents, callback){
-			if(zip){
-				request('http://api.openweathermap.org/data/2.5/weather?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body){
-					var weather = JSON.parse(body);
-					callback(null, incidents, weather);
-				});
-			}
-			else
-				callback(null, incidents, null);
-		},
-		function(incidents, weather, callback){
-			if(zip){
-				request('http://api.openweathermap.org/data/2.5/forecast?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
-					var forecast = JSON.parse(body)['list'];
-					callback(null, incidents, weather, forecast);
-				});
-			}
-			else
-				callback(null, incidents, weather, null);
-		}
-	], function(err, incidents, weather, forecast){
-		res.render('home', {defaults: (currentUser? Object.keys(currentUser.defaults): defs), currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, correctZip: correctZip});
-	});
+		], function(err, incidents, weather, forecast){
+			res.render('home', {defaults: Object.keys(currentUser.defaults), currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, correctZip: correctZip});
+		});
+	}
+	else{ //load login page
+		res.render('login', {loginSuccess: loginSuccess, currentUser: currentUser});
+	}
 });
 
-//SIGNUP PAGE- if user is logged in redirects to account page
+//====================================
+//Sign-Up Routes
+//====================================
 app.get('/signup', function(req, res){
     req.isAuthenticated() ? res.redirect('/') : res.render('signup', {currentUser: currentUser, signupSuccess: signupSuccess});
 });
 
-//TESTS WHETHER LOGIN CREDENTIALS WERE CORRECT - redirects to accounts if login was successful
-app.get('/login/:bool', function(req,res){
-   loginSuccess = (req.params.bool == 'true');
-   loginSuccess ? res.redirect('/') : res.redirect('/login');
+app.post('/signup', function(req, res){
+	var defaultObj = {traffic: 'on', weather: 'on', forecast: 'on', spotify: 'on', todos: 'on'};
+    User.register(new User({username: req.body.username, defaults: defaultObj}), req.body.password, function(err, user){
+        if(!err){
+            signupSuccess = true;
+            passport.authenticate('local')(req,res, function(){
+            	currentUser = user;
+                res.redirect('/');
+            });
+        }
+        else{
+            signupSuccess = false;
+            res.redirect('/signup');
+        }
+    });
 });
 
-//LOGIN PAGE- if user is already logged in redirects to account page
-app.get('/login', function(req, res){
-    req.isAuthenticated() ? res.redirect('/') : res.render('login', {loginSuccess: loginSuccess, currentUser: currentUser});
+//====================================
+//Login Routes
+//====================================
+app.get('/login/false', function(req,res){
+   loginSuccess = false;
+   res.redirect('/');
 });
 
-//LOGS USER OUT AND REDIRECTS TO HOME
+app.post('/login', passport.authenticate('local', {
+    failureRedirect: '/login/false'
+}), function(req, res){
+	User.findOne({username: req.body.username}, function(err, user){
+		loginSuccess = true;
+		currentUser = user;
+		res.redirect('/useDefaultZip');
+	});
+});
+
+//====================================
+//Logout Route
+//====================================
 app.get('/logout', function(req, res){
 	zip = null;
 	coords = null;
@@ -117,22 +145,16 @@ app.get('/logout', function(req, res){
     res.redirect('/');
 });
 
+//====================================
+//Zip-Code Routes
+//====================================
 app.get('/useDefaultZip', function(req, res){
 	zip = currentUser.zipcode;
 	correctZip = true;
 	getCoords(zip, res);
 });
 
-app.get('/settings', function(req, res){
-	if(req.isAuthenticated())
-		res.render('settings', {currentUser: currentUser, correctDefaultZip: correctDefaultZip});
-	else
-		res.redirect('/');
-})
-//==================================
-//Post Routes
-//==================================
-app.post('/zip', function(req, res){
+app.post('/zip', function(req, res){ 
 	if(Number.isInteger(Number(req.body.zip)) && String(req.body.zip).length == 5){ //correctly formatted zip code
 		zip = req.body.zip;
 		correctZip = true;
@@ -144,31 +166,14 @@ app.post('/zip', function(req, res){
 	}
 });
 
-//CREATES NEW ACCOUNT
-app.post('/signup', function(req, res){
-    User.register(new User({username: req.body.username, defaults: {traffic: 'on', weather: 'on', forecast: 'on', spotify: 'on', todos: 'on'}}), req.body.password, function(err, user){
-        if(!err){
-            signupSuccess = true;
-            passport.authenticate('local')(req,res, function(){
-            	currentUser = user;
-                res.redirect('/');
-            });
-        }
-        else{
-            signupSuccess = false;
-            res.redirect('signup');
-        }
-    });
-});
-
-//LOGS USER IN
-app.post('/login', passport.authenticate('local', {
-    failureRedirect: '/login/false'
-}), function(req, res){
-	User.findOne({username: req.body.username}, function(err, user){
-		currentUser = user;
+//====================================
+//Settings Routes
+//====================================
+app.get('/settings', function(req, res){
+	if(req.isAuthenticated())
+		res.render('settings', {currentUser: currentUser, correctDefaultZip: correctDefaultZip});
+	else
 		res.redirect('/');
-	});
 });
 
 app.post('/settings', function(req, res){
@@ -185,6 +190,16 @@ app.post('/settings', function(req, res){
 	}
 });
 
+app.post('/defaults', function(req, res){
+	currentUser.defaults = req.body;
+	currentUser.save(function(err){
+		res.redirect('/');
+	});
+});
+
+//====================================
+//todo Routes
+//====================================
 app.post('/newTodo', function(req, res){
 	currentUser.todos.push(req.body.todo);
 	currentUser.save(function(err){
@@ -199,13 +214,6 @@ app.post('/removeTodo', function(req, res){
 	});
 });
 
-app.post('/defaults', function(req, res){
-	currentUser.defaults = req.body;
-	currentUser.save(function(err){
-		res.redirect('/');
-	});
-});
-
 //=======================================================
 //functions
 //=======================================================
@@ -213,8 +221,6 @@ function getCoords(zip, res){
 	request('http://dev.virtualearth.net/REST/v1/Locations/zip='+zip+'?&key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
 	    var tempCoords = JSON.parse(body)['resourceSets'][0]['resources'][0]['bbox'];
 	    address = JSON.parse(body)['resourceSets'][0]['resources'][0]['address'];
-	    // locality = JSON.parse(body)['resourceSets'][0]['resources'][0]['address']['locality'];
-	    // console.log(JSON.parse(body)['resourceSets'][0]['resources'][0]);
 	    coords = "";
 		async.eachOf(tempCoords, function(coord, key, callback){
 			coords += (String(coord) + (key < 3 ? ',' : '?'));
