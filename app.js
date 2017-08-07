@@ -7,7 +7,8 @@ var express     			= require('express'),
     localStrategy 			= require('passport-local'),
     passportLocalMongoose 	= require('passport-local-mongoose'),
     expressSession			= require('express-session'),
-    User					= require('./models/user');	
+    User					= require('./models/user')
+    sources					= require('./public/sources.js');	
 
 //=======================================================
 //SET UP APP
@@ -51,39 +52,8 @@ var	correctZip = true,
 //====================================
 app.get('/', function(req, res){
 	if(req.isAuthenticated()){ // get info and load home page
-		async.waterfall([
-			function(callback){
-				if(coords){
-					request('http://dev.virtualearth.net/REST/v1/Traffic/Incidents/'+coords+'key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
-						var incidents = JSON.parse(body)['resourceSets'][0]['resources'];
-						callback(null, incidents);
-					});
-				}
-				else
-					callback(null, null);
-			},
-			function(incidents, callback){
-				if(zip){
-					request('http://api.openweathermap.org/data/2.5/weather?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body){
-						var weather = JSON.parse(body);
-						callback(null, incidents, weather);
-					});
-				}
-				else
-					callback(null, incidents, null);
-			},
-			function(incidents, weather, callback){
-				if(zip){
-					request('http://api.openweathermap.org/data/2.5/forecast?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
-						var forecast = JSON.parse(body)['list'];
-						callback(null, incidents, weather, forecast);
-					});
-				}
-				else
-					callback(null, incidents, weather, null);
-			}
-		], function(err, incidents, weather, forecast){
-			res.render('home', {defaults: Object.keys(currentUser.defaults), currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, correctZip: correctZip});
+		async.waterfall([getTraffic, getWeather, getForecast, getArticles], function(err, incidents, weather, forecast, articles){
+			res.render('home', {defaults: Object.keys(currentUser.defaults), currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, correctZip: correctZip, articles: articles});
 		});
 	}
 	else{ //load login page
@@ -100,7 +70,7 @@ app.get('/signup', function(req, res){
 
 app.post('/signup', function(req, res){
 	var defaultObj = {traffic: 'on', weather: 'on', forecast: 'on', spotify: 'on', todos: 'on'};
-    User.register(new User({username: req.body.username, defaults: defaultObj}), req.body.password, function(err, user){
+    User.register(new User({username: req.body.username, defaults: defaultObj, sources: sources}), req.body.password, function(err, user){
         if(!err){
             signupSuccess = true;
             passport.authenticate('local')(req,res, function(){
@@ -193,7 +163,23 @@ app.post('/settings', function(req, res){
 app.post('/defaults', function(req, res){
 	currentUser.defaults = req.body;
 	currentUser.save(function(err){
-		res.redirect('/');
+		res.redirect('/settings');
+	});
+});
+
+app.post('/sources', function(req, res){
+	currentUser.sources=[];
+	async.each(Object.keys(req.body), function(source, callback){
+		currentUser.sources.push(
+			sources.find(function(src){
+				return src.name == source;
+			})
+		);
+		callback();
+	}, function(err){
+		currentUser.save(function(err){
+			res.redirect('/settings');
+		});
 	});
 });
 
@@ -231,6 +217,57 @@ function getCoords(zip, res){
 	});
 }
 
+function getTraffic(callback){
+	if(coords){
+		request('http://dev.virtualearth.net/REST/v1/Traffic/Incidents/'+coords+'key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
+			var incidents = JSON.parse(body)['resourceSets'][0]['resources'];
+			callback(null, incidents);
+		});
+	}
+	else
+		callback(null, null);
+}
+
+function getWeather(incidents, callback){
+	if(zip){
+		request('http://api.openweathermap.org/data/2.5/weather?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body){
+			var weather = JSON.parse(body);
+			callback(null, incidents, weather);
+		});
+	}
+	else
+		callback(null, incidents, null);
+}
+
+function getForecast(incidents, weather, callback){
+	if(zip){
+		request('http://api.openweathermap.org/data/2.5/forecast?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
+			var forecast = JSON.parse(body)['list'];
+			callback(null, incidents, weather, forecast);
+		});
+	}
+	else
+		callback(null, incidents, weather, null);
+}
+
+function getArticles(incidents, weather, forecast, callback){
+	var articles = [];
+	async.each(currentUser.sources, function(source, callback1){
+        request("https://newsapi.org/v1/articles?source=" + source['id'] + "&apiKey=03cfb8dd19714f5287188cccfe3b8f70", function(error, response, body) {
+            async.each(JSON.parse(body)['articles'], function(article, callback2){
+                articles.push({source: (source['name']), article: article});
+                callback2();
+            }, function(){
+                callback1();
+            });
+        });
+    }, function(){
+        articles.sort(function(a,b){
+            return new Date(b['article']['publishedAt']) - new Date(a['article']['publishedAt']);
+        });
+        callback(null, incidents, weather, forecast, articles);
+    });
+}
 //=======================================================
 //START SERVER
 //=======================================================

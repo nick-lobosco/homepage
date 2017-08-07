@@ -3,7 +3,7 @@
 
 <h1>Settings:</h1>
 <% if(currentUser.zipcode){ %>
-	<h3>Default Zipcode: <%= currentUser.zipcode %> <i class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+	<h3>Default Zipcode: <%= currentUser.zipcode %> <i id='zipShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
 <% }else{ %>
 	<h3>No Default Zipcode <i class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
 <% } %>
@@ -15,21 +15,50 @@
 	<input type="text" name="zip">
 </form>
 
-<form id='defaults' action='/defaults' method='post'>
-	<h3>Choose which elements to display on homepage: </h3>
-	<div style='margin-left: 30px'>
-		<h4 class="default"><label>traffic</label> <input type="checkbox" name="traffic" <%= Object.keys(currentUser.defaults).includes('traffic')?'checked':""%> ></h4>
-		<h4><label>weather</label> <input type="checkbox" name="weather" <%= Object.keys(currentUser.defaults).includes('weather')?'checked':""%> ></h4>
-		<h4><label>forecast</label> <input type="checkbox" name="forecast" <%= Object.keys(currentUser.defaults).includes('forecast')?'checked':""%> ></h4>
-		<h4><label>todos</label> <input type="checkbox" name="todos" <%= Object.keys(currentUser.defaults).includes('todos')?'checked':""%>></h4>
-		<h4><label>spotify</label> <input type="checkbox" name="spotify" <%= Object.keys(currentUser.defaults).includes('spotify')?'checked':""%>></h4>
-		<input type="submit">
-	</div>
+<h3>Choose which elements to display on homepage: <i id='defaultsShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+<form id='defaultsEditForm' action='/defaults' method='post' style='display: none'>
+	<%['traffic', 'weather', 'forecast', 'todos', 'spotify', 'news'].forEach(function(el){ %>
+		<h4><label><%= el %></label> <input type="checkbox" name="<%= el %>" <%= Object.keys(currentUser.defaults).includes(el)?'checked':""%> ></h4>
+	<% }); %>
+	<input type="submit">
 </form>
 
+<h3>Choose which news sources to use: <i id='sourcesShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+<form id='sourcesEditForm' action="/sources" method="post" style='display: none'>
+	<button type='button' id='selectAll'>Select All</button>
+	<button type='button' id='deselectAll'>Deselect All</button>
+	<% sources.forEach(function(source){ %>
+		<h4><label><%= source['name'] %></label> <input class='source' type="checkbox" name="<%= source['name'] %>" <%= currentUser.sources.find(function(src){ return source.name == src.name}) ?'checked':""%>></h4>
+		<h5><%= source['description'] %></h5>
+	<% }); %>
+	<input type="submit">
+</form>
 <script>
-	document.querySelector('.fa-pencil-square-o').addEventListener('click', function(){
+	document.getElementById('zipShow').addEventListener('click', function(){
 		var form = document.getElementById('zipEditForm');
 		form.style.display = (form.style.display == 'block' ? 'none' : 'block');
+	});
+	document.getElementById('defaultsShow').addEventListener('click', function(){
+		var form = document.getElementById('defaultsEditForm');
+		form.style.display = (form.style.display == 'block' ? 'none' : 'block');
+	});
+	document.getElementById('sourcesShow').addEventListener('click', function(){
+		var form = document.getElementById('sourcesEditForm');
+		form.style.display = (form.style.display == 'block' ? 'none' : 'block');
+	});
+
+	document.getElementById('')
+	document.getElementById('selectAll').addEventListener('click', function(){
+		var sources = document.getElementsByClassName('source');
+		for(var i = 0; i<sources.length; i++){
+			sources[i].checked = true;
+		}
+	});
+
+	document.getElementById('deselectAll').addEventListener('click', function(){
+		var sources = document.getElementsByClassName('source');
+		for(var i = 0; i<sources.length; i++){
+			sources[i].checked = false;
+		}
 	});
 </script>
