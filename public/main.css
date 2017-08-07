@@ -43,3 +43,6 @@
 .loginElem{
 	margin: 3px;
 }
+fieldset{
+	display: none;
+}

@@ -1,27 +1,15 @@
 <% include partials/header %>
 <% include partials/navbar %>
 <div class="col-md-6">
-    <% if(defaults.includes('spotify')){ %>
+    <% if(currentUser.defaults.includes('spotify')){ %>
         <iframe id='spotify' src="https://open.spotify.com/embed?uri=spotify:user:nick.lobosco:playlist:3YjhCl7tZtnNDIs4OXZAaP" frameborder="0" allowtransparency="true"></iframe>
     <% } %>
 
-    <% if(address){ %>
+    <% if(address && (currentUser.defaults.includes('traffic') || currentUser.defaults.includes('weather') || currentUser.defaults.includes('forecast'))){ %>
         <h2>Displaying data for: <%= address['locality']%>, <%= address['adminDistrict'] %></h2>
     <% } %>
 
-     <form action="/zip" method="post">
-        <label>Change Current Zipcode:</label>
-        <input type="text" name="zip">
-        <% if(!correctZip){ %>
-            <h3 class='error_message'>Invalid Zip</h3>
-        <% } %>
-    </form>
-
-    <%if(currentUser.zipcode){ %>
-        <a href='/useDefaultZip'>Use Default Zipcode: <%= currentUser.zipcode %></a>
-    <% } %>
-
-    <% if(defaults.includes('traffic') && incidents){ %>
+    <% if(currentUser.defaults.includes('traffic') && incidents){ %>
         <div>
             <h2 class='toggle'>Show Traffic:</h2>
             <div class='info'>
@@ -38,7 +26,7 @@
         </div>
     <% } %>
         
-    <% if(defaults.includes('weather') && weather){ %>
+    <% if(currentUser.defaults.includes('weather') && weather){ %>
         <div>
             <h2 class='toggle'>Show Current Weather:</h2>
             <div class='info'>
@@ -51,7 +39,7 @@
         </div>
     <% } %>
 
-    <% if(defaults.includes('forecast') && forecast){ %>
+    <% if(currentUser.defaults.includes('forecast') && forecast){ %>
         <div>
             <h2 class='toggle'>Show 5 Day Forecast:</h2>
             <div class='info'>
@@ -75,26 +63,28 @@
         </div>
     <% } %>
 
-    <% if(defaults.includes('todos')){ %>
-        <h2 class='toggle'>To-Dos:</h3>
-        <div class='info' style="display: block">
-            <ul>
-                <% currentUser.todos.forEach(function(todo){ %>
-                    <li class='todo'><%= todo %><i class="fa fa-times" aria-hidden="true"></i></li>
-                    <form action='/removeTodo' method='post'>
-                        <input type="text" name="todo" value=<%=todo%> hidden> 
-                    </form>
-                <% }); %>    
-            </ul>
-            <form action='/newTodo' method='post'>
-                <input type="text" name="todo" placeholder="new todo">
-            </form>
+    <% if(currentUser.defaults.includes('todos')){ %>
+        <div>
+            <h2 class='toggle'>To-Dos:</h2>
+            <div class='info' style="display: block">
+                <ul>
+                    <% currentUser.todos.forEach(function(todo){ %>
+                        <li class='todo'><%= todo %><i class="fa fa-times" aria-hidden="true"></i></li>
+                        <form action='/removeTodo' method='post'>
+                            <input type="text" name="todo" value=<%=todo%> hidden> 
+                        </form>
+                    <% }); %>    
+                </ul>
+                <form action='/newTodo' method='post'>
+                    <input type="text" name="todo" placeholder="new todo">
+                </form>
+            </div>    
         </div>
     <% } %>
 </div> 
 
 <div class='col-md-6'>
-    <% if(defaults.includes('news')){ %>
+    <% if(currentUser.defaults.includes('news')){ %>
         <h2>Current News: </h2>
         <% articles.forEach(function(article, index){ %>
             <% if(index%4==0){ %>

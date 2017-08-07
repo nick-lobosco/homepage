@@ -2,37 +2,36 @@
 <% include partials/navbar %>
 
 <h1>Settings:</h1>
-<% if(currentUser.zipcode){ %>
-	<h3>Default Zipcode: <%= currentUser.zipcode %> <i id='zipShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
-<% }else{ %>
-	<h3>No Default Zipcode <i class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
-<% } %>
-<form id='zipEditForm' action="/settings" method='post' style="display: <%= correctDefaultZip ? 'none' : 'block' %>">
-	<% if(!correctDefaultZip){ %>
-		<p class='error_message'>incorrect zip code</p>
-	<% } %>
-	<label>Enter New Default Zipcode: </label>
-	<input type="text" name="zip">
+<form action='/settings' method='post'>
+	<button>Save Settings</button>
+
+	<h3><%= currentUser.zipcode ? ('Default Zipcode: ' + currentUser.zipcode) : 'No Default Zipcode Set' %><i id='zipShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+	<fieldset id='zipEditForm' style="display: <%= correctDefaultZip ? 'none' : 'block' %>">
+		<% if(!correctDefaultZip){ %>
+			<p class='error_message'>incorrect zip code</p>
+		<% } %>
+		<label>Enter New Default Zipcode: </label>
+		<input type="text" name="zip">
+	</fieldset>
+
+	<h3>Homepage Elements: <i id='defaultsShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+	<fieldset id='defaultsEditForm'>
+		<%['traffic', 'weather', 'forecast', 'todos', 'spotify', 'news'].forEach(function(el){ %>
+			<h4><label><%= el %></label> <input type="checkbox" name="elements[]" value="<%= el %>" <%= currentUser.defaults.includes(el)?'checked':""%> ></h4>
+		<% }); %>
+	</fieldset>
+
+	<h3>News Sources: <i id='sourcesShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
+	<fieldset id='sourcesEditForm'>
+		<button type='button' id='selectAll'>Select All</button>
+		<button type='button' id='deselectAll'>Deselect All</button>
+		<% sources.forEach(function(source){ %>
+			<h4><label><%= source['name'] %></label> <input class='source' type="checkbox" name="srcs[]" value="<%= source['name'] %>"<%= currentUser.sources.find(function(src){ return source.name == src.name}) ?'checked':""%>></h4>
+			<h5><%= source['description'] %></h5>
+		<% }); %>
+	</fieldset>
 </form>
 
-<h3>Choose which elements to display on homepage: <i id='defaultsShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
-<form id='defaultsEditForm' action='/defaults' method='post' style='display: none'>
-	<%['traffic', 'weather', 'forecast', 'todos', 'spotify', 'news'].forEach(function(el){ %>
-		<h4><label><%= el %></label> <input type="checkbox" name="<%= el %>" <%= Object.keys(currentUser.defaults).includes(el)?'checked':""%> ></h4>
-	<% }); %>
-	<input type="submit">
-</form>
-
-<h3>Choose which news sources to use: <i id='sourcesShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
-<form id='sourcesEditForm' action="/sources" method="post" style='display: none'>
-	<button type='button' id='selectAll'>Select All</button>
-	<button type='button' id='deselectAll'>Deselect All</button>
-	<% sources.forEach(function(source){ %>
-		<h4><label><%= source['name'] %></label> <input class='source' type="checkbox" name="<%= source['name'] %>" <%= currentUser.sources.find(function(src){ return source.name == src.name}) ?'checked':""%>></h4>
-		<h5><%= source['description'] %></h5>
-	<% }); %>
-	<input type="submit">
-</form>
 <script>
 	document.getElementById('zipShow').addEventListener('click', function(){
 		var form = document.getElementById('zipEditForm');

@@ -34,16 +34,14 @@ mongoose.connect('mongodb://nick:password@ds127993.mlab.com:27993/homepage-');
 //====================================
 //Global Variables
 //====================================
-var zip,
-	coords,
+var coords,
 	address,
 	currentUser;
 
 //====================================
 //Error Control Variables
 //====================================
-var	correctZip = true,
-	loginSuccess = true,
+var	loginSuccess = true,
 	signupSuccess = true,
 	correctDefaultZip = true;
 
@@ -53,7 +51,7 @@ var	correctZip = true,
 app.get('/', function(req, res){
 	if(req.isAuthenticated()){ // get info and load home page
 		async.waterfall([getTraffic, getWeather, getForecast, getArticles], function(err, incidents, weather, forecast, articles){
-			res.render('home', {defaults: Object.keys(currentUser.defaults), currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, correctZip: correctZip, articles: articles});
+			res.render('home', {currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, articles: articles});
 		});
 	}
 	else{ //load login page
@@ -69,8 +67,8 @@ app.get('/signup', function(req, res){
 });
 
 app.post('/signup', function(req, res){
-	var defaultObj = {traffic: 'on', weather: 'on', forecast: 'on', spotify: 'on', todos: 'on'};
-    User.register(new User({username: req.body.username, defaults: defaultObj, sources: sources}), req.body.password, function(err, user){
+	var defaults = ['traffic', 'weather', 'forecast', 'spotify', 'todos', 'news'];
+    User.register(new User({username: req.body.username, defaults: defaults, sources: sources}), req.body.password, function(err, user){
         if(!err){
             signupSuccess = true;
             passport.authenticate('local')(req,res, function(){
@@ -99,7 +97,9 @@ app.post('/login', passport.authenticate('local', {
 	User.findOne({username: req.body.username}, function(err, user){
 		loginSuccess = true;
 		currentUser = user;
-		res.redirect('/useDefaultZip');
+		getCoords(user.zipcode, function(){
+			res.redirect('/');
+		});
 	});
 });
 
@@ -107,33 +107,11 @@ app.post('/login', passport.authenticate('local', {
 //Logout Route
 //====================================
 app.get('/logout', function(req, res){
-	zip = null;
 	coords = null;
 	address = null;
 	currentUser = null;
     req.logout();
     res.redirect('/');
-});
-
-//====================================
-//Zip-Code Routes
-//====================================
-app.get('/useDefaultZip', function(req, res){
-	zip = currentUser.zipcode;
-	correctZip = true;
-	getCoords(zip, res);
-});
-
-app.post('/zip', function(req, res){ 
-	if(Number.isInteger(Number(req.body.zip)) && String(req.body.zip).length == 5){ //correctly formatted zip code
-		zip = req.body.zip;
-		correctZip = true;
-		getCoords(zip, res);
-	}
-	else{
-		correctZip = false;
-		res.redirect('/');
-	}
 });
 
 //====================================
@@ -147,42 +125,54 @@ app.get('/settings', function(req, res){
 });
 
 app.post('/settings', function(req, res){
-	if(Number.isInteger(Number(req.body.zip)) && req.body.zip.length == 5){ //correctly formatted zip code
-		currentUser.zipcode = req.body.zip;
-		correctDefaultZip = true;
-		currentUser.save(function(err){
-			res.redirect('/settings');		
-		});
-	}
-	else{
-		correctDefaultZip = false;
-		res.redirect('/settings');
-	}
-});
-
-app.post('/defaults', function(req, res){
-	currentUser.defaults = req.body;
-	currentUser.save(function(err){
-		res.redirect('/settings');
+	async.waterfall([
+		function(callback){
+			if(req.body.zip){ //zip was changed
+				if(isValidZip(req.body.zip)){ //correctly formatted zip code
+					currentUser.zipcode = req.body.zip;
+					correctDefaultZip = true;
+					getCoords(req.body.zip);
+					currentUser.save(function(err){
+						callback(null);		
+					});
+				}
+				else{ //invalid zip
+					correctDefaultZip = false;
+					callback('invalid zip');
+				}
+			}
+			else
+				callback(null);
+		},
+		function(callback){
+			currentUser.defaults = req.body.elements;
+			currentUser.save(function(err){
+				callback(null);
+			});
+		},
+		function(callback){
+			currentUser.sources=[];
+			async.each(req.body.srcs, function(source, cb){
+				currentUser.sources.push(
+					sources.find(function(src){
+						return src.name == source;
+					})
+				);
+				cb();
+			}, function(err){
+				currentUser.save(function(err){
+					callback(null);
+				});
+			});
+		}
+	], function(err){
+		res.redirect(err?'/settings':'/');
 	});
-});
 
-app.post('/sources', function(req, res){
-	currentUser.sources=[];
-	async.each(Object.keys(req.body), function(source, callback){
-		currentUser.sources.push(
-			sources.find(function(src){
-				return src.name == source;
-			})
-		);
-		callback();
-	}, function(err){
-		currentUser.save(function(err){
-			res.redirect('/settings');
-		});
-	});
-});
 
+
+
+});
 //====================================
 //todo Routes
 //====================================
@@ -203,18 +193,23 @@ app.post('/removeTodo', function(req, res){
 //=======================================================
 //functions
 //=======================================================
-function getCoords(zip, res){
-	request('http://dev.virtualearth.net/REST/v1/Locations/zip='+zip+'?&key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
-	    var tempCoords = JSON.parse(body)['resourceSets'][0]['resources'][0]['bbox'];
-	    address = JSON.parse(body)['resourceSets'][0]['resources'][0]['address'];
-	    coords = "";
-		async.eachOf(tempCoords, function(coord, key, callback){
-			coords += (String(coord) + (key < 3 ? ',' : '?'));
-			callback();
-		}, function(err){
-			res.redirect('/');
-		})
-	});
+function getCoords(zip, cb){
+	if(zip){
+		request('http://dev.virtualearth.net/REST/v1/Locations/zip='+zip+'?&key=ArLa6JxoMs4uT_XJfS6sgsFm7mXq8HXwvmDblyyBce9V8JMma-csh_6Dj6cnzKRn', function(err, response, body){
+		    var tempCoords = JSON.parse(body)['resourceSets'][0]['resources'][0]['bbox'];
+		    address = JSON.parse(body)['resourceSets'][0]['resources'][0]['address'];
+		    coords = "";
+			async.eachOf(tempCoords, function(coord, key, callback){
+				coords += (String(coord) + (key < 3 ? ',' : '?'));
+				callback();
+			}, function(err){
+				if(cb)
+					cb();
+			})
+		});
+	}
+	else
+		cb();
 }
 
 function getTraffic(callback){
@@ -229,8 +224,8 @@ function getTraffic(callback){
 }
 
 function getWeather(incidents, callback){
-	if(zip){
-		request('http://api.openweathermap.org/data/2.5/weather?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body){
+	if(currentUser.zipcode){
+		request('http://api.openweathermap.org/data/2.5/weather?zip='+currentUser.zipcode.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body){
 			var weather = JSON.parse(body);
 			callback(null, incidents, weather);
 		});
@@ -240,8 +235,9 @@ function getWeather(incidents, callback){
 }
 
 function getForecast(incidents, weather, callback){
-	if(zip){
-		request('http://api.openweathermap.org/data/2.5/forecast?zip='+zip.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
+	if(currentUser.zipcode){
+		request('http://api.openweathermap.org/data/2.5/forecast?zip='+currentUser.zipcode.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
+			console.log(JSON.parse(body));
 			var forecast = JSON.parse(body)['list'];
 			callback(null, incidents, weather, forecast);
 		});
@@ -267,6 +263,10 @@ function getArticles(incidents, weather, forecast, callback){
         });
         callback(null, incidents, weather, forecast, articles);
     });
+}
+
+function isValidZip(zip){
+	return (Number.isInteger(Number(zip)) && zip.length == 5);		
 }
 //=======================================================
 //START SERVER
