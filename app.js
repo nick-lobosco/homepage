@@ -259,6 +259,9 @@ function isValidZip(zip){
 //=======================================================
 //START SERVER
 //=======================================================
-app.listen(process.env.PORT, process.env.IP, function(){
-    console.log('success');
-});
+if(process.argv[2]){
+	app.listen(process.env.PORT, process.env.IP);
+}
+else{
+	app.listen(8000);
+}
