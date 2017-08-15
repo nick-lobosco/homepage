@@ -16,7 +16,7 @@
 
 	<h3>Homepage Elements: <i id='defaultsShow' class="fa fa-pencil-square-o" aria-hidden="true"></i></h3>
 	<fieldset id='defaultsEditForm'>
-		<%['traffic', 'weather', 'forecast', 'todos', 'spotify', 'news'].forEach(function(el){ %>
+		<%['traffic', 'weather', 'todos', 'spotify', 'news'].forEach(function(el){ %>
 			<h4><label><%= el %></label> <input type="checkbox" name="elements[]" value="<%= el %>" <%= currentUser.defaults.includes(el)?'checked':""%> ></h4>
 		<% }); %>
 	</fieldset>

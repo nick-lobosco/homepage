@@ -39,30 +39,6 @@
         </div>
     <% } %>
 
-    <% if(currentUser.defaults.includes('forecast') && forecast){ %>
-        <div>
-            <h2 class='toggle'>Show 5 Day Forecast:</h2>
-            <div class='info'>
-                <% var max, count = 0; %>
-                <% for(var i=0;i<5;i++){ %>
-                    <div class='forecastDate'>
-                        <h3><%=new Date(forecast[count]['dt_txt']).toDateString()%></h3>
-                        <% max = (i == 0 ? forecast.length-32 : count+8); %>
-                        <% while(count<max){ %>
-                            <p> <%=new Date(forecast[count]['dt_txt']).toLocaleTimeString()%>: </p>
-                            <div style="margin-left: 20px; background-image: url('http://openweathermap.org/img/w/<%= forecast[count]['weather'][0]['icon']%>.png'); background-size: 50% 100%; background-repeat: no-repeat;">
-                                <p> <%= forecast[count]['weather'][0]['description']%></p>
-                                <p> temp: <%=forecast[count]['main']['temp']%></p>
-                                <p> humidity: <%=forecast[count]['main']['humidity']%>%</p>
-                            </div>
-                            <% count++; %>
-                    <% } %>
-                    </div>
-                <% } %>
-            </div>
-        </div>
-    <% } %>
-
     <% if(currentUser.defaults.includes('todos')){ %>
         <div>
             <h2 class='toggle'>To-Dos:</h2>

@@ -50,8 +50,8 @@ var	loginSuccess = true,
 //====================================
 app.get('/', function(req, res){
 	if(req.isAuthenticated()){ // get info and load home page
-		async.waterfall([getTraffic, getWeather, getForecast, getArticles], function(err, incidents, weather, forecast, articles){
-			res.render('home', {currentUser: currentUser, incidents: incidents, weather: weather, forecast: forecast, address: address, articles: articles});
+		async.waterfall([getTraffic, getWeather, getArticles], function(err, incidents, weather, articles){
+			res.render('home', {currentUser: currentUser, incidents: incidents, weather: weather, address: address, articles: articles});
 		});
 	}
 	else{ //load login page
@@ -234,19 +234,7 @@ function getWeather(incidents, callback){
 		callback(null, incidents, null);
 }
 
-function getForecast(incidents, weather, callback){
-	if(currentUser.zipcode){
-		request('http://api.openweathermap.org/data/2.5/forecast?zip='+currentUser.zipcode.toString()+',us&units=imperial&APPID=2cf2807ad1a80221adce09c988f81580', function(err, response, body) {
-			console.log(JSON.parse(body));
-			var forecast = JSON.parse(body)['list'];
-			callback(null, incidents, weather, forecast);
-		});
-	}
-	else
-		callback(null, incidents, weather, null);
-}
-
-function getArticles(incidents, weather, forecast, callback){
+function getArticles(incidents, weather, callback){
 	var articles = [];
 	async.each(currentUser.sources, function(source, callback1){
         request("https://newsapi.org/v1/articles?source=" + source['id'] + "&apiKey=03cfb8dd19714f5287188cccfe3b8f70", function(error, response, body) {
@@ -261,7 +249,7 @@ function getArticles(incidents, weather, forecast, callback){
         articles.sort(function(a,b){
             return new Date(b['article']['publishedAt']) - new Date(a['article']['publishedAt']);
         });
-        callback(null, incidents, weather, forecast, articles);
+        callback(null, incidents, weather, articles);
     });
 }
 
