@@ -259,12 +259,12 @@ function isValidZip(zip){
 //=======================================================
 //START SERVER
 //=======================================================
-app.listen(process.env.PORT, process.env.IP, function(){
-  console.log("Server Running"); 
-});
-/*if(process.argv[2]){
-	app.listen(process.env.PORT, process.env.IP);
+
+if(process.argv[2]){
+	app.listen(process.env.PORT, process.env.IP, function(){
+	  console.log("Server Running"); 
+	});
 }
 else{
 	app.listen(8000);
-}*/
+}
