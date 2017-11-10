@@ -110,6 +110,9 @@ app.get('/logout', function(req, res){
 	coords = null;
 	address = null;
 	currentUser = null;
+	loginSuccess = true,
+	signupSuccess = true,
+	correctDefaultZip = true;
     req.logout();
     res.redirect('/');
 });
